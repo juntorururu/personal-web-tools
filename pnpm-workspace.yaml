@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - shared/*
+
+confirmModulesPurge: false
+nodeLinker: hoisted
+
+allowBuilds:
+  esbuild: true
+  sharp: false

@@ -1,0 +1,17 @@
+{
+  "name": "personal-web-tools",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "pnpm --filter @personal-web-tools/routine-checklist dev",
+    "build": "pnpm --filter @personal-web-tools/routine-checklist build",
+    "lint": "pnpm --filter @personal-web-tools/routine-checklist lint",
+    "test": "pnpm --filter @personal-web-tools/routine-checklist test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}
