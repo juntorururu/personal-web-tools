@@ -17,30 +17,47 @@ export function addRoutine(
   items: RoutineItem[],
   label: string,
   group: RoutineGroup,
+  time: string,
   id: string = crypto.randomUUID(),
 ): RoutineItem[] {
   const cleanLabel = label.trim();
   if (!cleanLabel) {
     throw new Error('項目名を入力してください。');
   }
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+    throw new Error('時刻を正しく入力してください。');
+  }
 
   const nextOrder = items.filter((item) => item.group === group).length;
   return [
     ...items,
-    { id, label: cleanLabel, group, enabled: true, order: nextOrder },
+    {
+      id,
+      label: cleanLabel,
+      group,
+      time,
+      enabled: true,
+      order: nextOrder,
+    },
   ];
 }
 
 export function updateRoutine(
   items: RoutineItem[],
   id: string,
-  patch: Partial<Pick<RoutineItem, 'label' | 'group' | 'enabled'>>,
+  patch: Partial<Pick<RoutineItem, 'label' | 'group' | 'time' | 'enabled'>>,
 ): RoutineItem[] {
   const current = items.find((item) => item.id === id);
   if (!current) return items;
 
   const label = patch.label === undefined ? current.label : patch.label.trim();
   if (!label) throw new Error('項目名を空にすることはできません。');
+  if (
+    patch.time !== undefined &&
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(patch.time)
+  ) {
+    throw new Error('時刻を正しく入力してください。');
+  }
 
   return normalizeOrders(
     items.map((item) =>

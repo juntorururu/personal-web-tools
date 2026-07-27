@@ -10,19 +10,33 @@ describe('routine operations', () => {
   const base = createDefaultData(new Date('2026-07-27T00:00:00+09:00')).items;
 
   it('adds, renames, enables and removes an item', () => {
-    const added = addRoutine(base, '朝食をとる', 'morning', 'new-item');
+    const added = addRoutine(
+      base,
+      '朝食をとる',
+      'morning',
+      '07:10',
+      'new-item',
+    );
     expect(added.at(-1)?.label).toBe('朝食をとる');
     const changed = updateRoutine(added, 'new-item', {
       label: '朝食',
+      time: '07:20',
       enabled: false,
     });
     expect(changed.find((item) => item.id === 'new-item')).toMatchObject({
       label: '朝食',
+      time: '07:20',
       enabled: false,
     });
     expect(
       removeRoutine(changed, 'new-item').some((item) => item.id === 'new-item'),
     ).toBe(false);
+  });
+
+  it('rejects an invalid routine time', () => {
+    expect(() =>
+      addRoutine(base, '朝食をとる', 'morning', '25:00', 'new-item'),
+    ).toThrow('時刻');
   });
 
   it('moves and changes the group of an item', () => {

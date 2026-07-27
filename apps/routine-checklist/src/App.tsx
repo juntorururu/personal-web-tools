@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { formatJstDate } from './lib/date';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
+import { formatJstDate, jstDateKey, jstTime } from './lib/date';
 import { createDefaultData } from './lib/defaults';
 import {
   checkScheduledNotifications,
@@ -96,28 +103,66 @@ function Header({
   );
 }
 
+function WeekStrip({ now }: { now: Date }) {
+  const dateKey = jstDateKey(now);
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const currentDate = new Date(Date.UTC(year, month - 1, day));
+  const currentDay = currentDate.getUTCDay();
+  const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+
+  return (
+    <section className="week-strip" aria-label="今週">
+      {weekDays.map((weekday, index) => {
+        const date = new Date(currentDate);
+        date.setUTCDate(currentDate.getUTCDate() + index - currentDay);
+        const isToday = index === currentDay;
+        return (
+          <div
+            className={`week-day ${isToday ? 'today-day' : ''}`}
+            key={weekday}
+          >
+            <span>{weekday}</span>
+            <strong aria-current={isToday ? 'date' : undefined}>
+              {date.getUTCDate()}
+            </strong>
+            <i aria-hidden="true" />
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 function Progress({ completed, total }: { completed: number; total: number }) {
   const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+  const progressStyle = { '--progress': percentage } as CSSProperties;
   return (
     <section
       className="progress-card"
       aria-label={`完了 ${completed} / ${total}`}
     >
-      <div className="progress-copy">
+      <div className="progress-ring" style={progressStyle} aria-hidden="true">
         <div>
           <span className="progress-number">{completed}</span>
-          <span className="progress-total"> / {total} 完了</span>
+          <span className="progress-total">/{total}</span>
         </div>
-        <strong>{percentage}%</strong>
       </div>
-      <div
-        className="progress-track"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={total}
-        aria-valuenow={completed}
-      >
-        <span style={{ width: `${percentage}%` }} />
+      <div className="progress-summary">
+        <p className="eyebrow">TODAY&apos;S ROUTINE</p>
+        <h2>今日の進み具合</h2>
+        <p>
+          あと <strong>{Math.max(total - completed, 0)}</strong>{' '}
+          件で今日のルーティンが完了します
+        </p>
+        <div
+          className="progress-track"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={completed}
+        >
+          <span style={{ width: `${percentage}%` }} />
+        </div>
       </div>
       {total > 0 && completed === total && (
         <p className="complete-message">
@@ -140,17 +185,18 @@ function RoutineCard({
   onToggle: (id: string) => void;
 }) {
   return (
-    <section className={`routine-card ${group}`}>
+    <section className={`routine-card timeline-section ${group}`}>
       <div className="card-heading">
-        <div>
+        <span className="group-icon" aria-hidden="true">
+          {group === 'morning' ? '☀' : '☾'}
+        </span>
+        <div className="group-heading-copy">
           <p className="card-kicker">
             {group === 'morning' ? 'MORNING' : 'EVENING'}
           </p>
           <h2>{GROUP_LABEL[group]}</h2>
         </div>
-        <span aria-hidden="true" className="card-symbol">
-          {group === 'morning' ? '☀' : '☾'}
-        </span>
+        <span className="group-count">{items.length}件</span>
       </div>
       {items.length === 0 ? (
         <p className="empty-copy">
@@ -162,7 +208,21 @@ function RoutineCard({
             const checked = completedIds.includes(item.id);
             return (
               <li key={item.id}>
-                <label className={`check-row ${checked ? 'checked' : ''}`}>
+                <label
+                  className={`check-row timeline-row ${checked ? 'checked' : ''}`}
+                >
+                  <time dateTime={item.time}>{item.time}</time>
+                  <span className="timeline-marker" aria-hidden="true">
+                    <span>{group === 'morning' ? '○' : '●'}</span>
+                  </span>
+                  <span className="task-copy">
+                    <small>
+                      {group === 'morning'
+                        ? '朝のルーティン'
+                        : '帰宅後のルーティン'}
+                    </small>
+                    <span className="check-label">{item.label}</span>
+                  </span>
                   <input
                     type="checkbox"
                     checked={checked}
@@ -171,7 +231,6 @@ function RoutineCard({
                   <span className="custom-check" aria-hidden="true">
                     {checked ? '✓' : ''}
                   </span>
-                  <span className="check-label">{item.label}</span>
                 </label>
               </li>
             );
@@ -204,20 +263,29 @@ function HomeView({
 
   return (
     <main className="page home-page">
-      <p className="today">{formatJstDate(now)}</p>
+      <WeekStrip now={now} />
+      <div className="today-line">
+        <p className="today">{formatJstDate(now)}</p>
+        <p className="current-time">
+          <span>現在</span>
+          {jstTime(now)}
+        </p>
+      </div>
       <Progress completed={completed} total={activeItems.length} />
-      <RoutineCard
-        group="morning"
-        items={itemsFor('morning')}
-        completedIds={data.completion.completedIds}
-        onToggle={onToggle}
-      />
-      <RoutineCard
-        group="evening"
-        items={itemsFor('evening')}
-        completedIds={data.completion.completedIds}
-        onToggle={onToggle}
-      />
+      <div className="schedule-board">
+        <RoutineCard
+          group="morning"
+          items={itemsFor('morning')}
+          completedIds={data.completion.completedIds}
+          onToggle={onToggle}
+        />
+        <RoutineCard
+          group="evening"
+          items={itemsFor('evening')}
+          completedIds={data.completion.completedIds}
+          onToggle={onToggle}
+        />
+      </div>
       <button
         className="secondary-button full-button"
         type="button"
@@ -240,6 +308,7 @@ function RoutineEditor({
 }) {
   const [label, setLabel] = useState('');
   const [group, setGroup] = useState<RoutineGroup>('morning');
+  const [time, setTime] = useState('07:00');
 
   const mutateItems = (change: (items: RoutineItem[]) => RoutineItem[]) =>
     setData((current) => ({ ...current, items: change(current.items) }));
@@ -247,7 +316,7 @@ function RoutineEditor({
   const add = (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      mutateItems((items) => addRoutine(items, label, group));
+      mutateItems((items) => addRoutine(items, label, group, time));
       setLabel('');
       notify('項目を追加しました。');
     } catch (error) {
@@ -293,11 +362,24 @@ function RoutineEditor({
             グループ
             <select
               value={group}
-              onChange={(event) => setGroup(event.target.value as RoutineGroup)}
+              onChange={(event) => {
+                const nextGroup = event.target.value as RoutineGroup;
+                setGroup(nextGroup);
+                setTime(nextGroup === 'morning' ? '07:00' : '19:00');
+              }}
             >
               <option value="morning">朝起きてから</option>
               <option value="evening">帰宅してから</option>
             </select>
+          </label>
+          <label>
+            時刻
+            <input
+              type="time"
+              value={time}
+              onChange={(event) => setTime(event.target.value)}
+              required
+            />
           </label>
           <button className="primary-button" type="submit">
             項目を追加
@@ -363,6 +445,18 @@ function RoutineEditor({
                   />
                 </label>
                 <div className="editor-controls">
+                  <input
+                    type="time"
+                    aria-label={`${item.label}の時刻`}
+                    value={item.time}
+                    onChange={(event) =>
+                      mutateItems((items) =>
+                        updateRoutine(items, item.id, {
+                          time: event.target.value,
+                        }),
+                      )
+                    }
+                  />
                   <select
                     aria-label={`${item.label}のグループ`}
                     value={item.group}
@@ -768,7 +862,7 @@ function SettingsView({
         </div>
         <div>
           <span>バージョン</span>
-          <strong>1.0.0</strong>
+          <strong>1.1.0</strong>
         </div>
         <div>
           <span>保存先</span>

@@ -33,9 +33,20 @@ function parseItem(value: unknown): RoutineItem | null {
     id: value.id,
     label: value.label.trim(),
     group: group as RoutineGroup,
+    time: isTime(value.time)
+      ? value.time
+      : defaultItemTime(group as RoutineGroup, value.order),
     enabled: value.enabled,
     order: Math.max(0, Math.floor(value.order)),
   };
+}
+
+function defaultItemTime(group: RoutineGroup, order: number): string {
+  const baseMinutes = group === 'morning' ? 6 * 60 + 30 : 19 * 60;
+  const totalMinutes = baseMinutes + Math.max(0, Math.floor(order)) * 10;
+  const hours = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
 export function validateAppData(value: unknown): AppData | null {

@@ -42,6 +42,17 @@ describe('storage and backup', () => {
     );
     expect(restored.notifications.morning.enabled).toBe(true);
     expect(restored.items).toHaveLength(9);
+    expect(restored.items[0].time).toBe('06:30');
+  });
+
+  it('migrates old items that do not have a time', () => {
+    const data = createDefaultData(day1);
+    const legacy = JSON.parse(JSON.stringify(data)) as {
+      items: Array<Record<string, unknown>>;
+    };
+    delete legacy.items[0].time;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+    expect(loadData(day1).items[0].time).toBe('06:30');
   });
 
   it('rejects invalid JSON without replacing existing data', () => {

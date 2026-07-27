@@ -23,7 +23,7 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         background_color: '#f5f6f2',
-        theme_color: '#385c50',
+        theme_color: '#13bea3',
         orientation: 'portrait',
         lang: 'ja',
         categories: ['productivity', 'lifestyle'],

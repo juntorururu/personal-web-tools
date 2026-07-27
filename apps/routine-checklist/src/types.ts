@@ -4,6 +4,7 @@ export interface RoutineItem {
   id: string;
   label: string;
   group: RoutineGroup;
+  time: string;
   enabled: boolean;
   order: number;
 }
