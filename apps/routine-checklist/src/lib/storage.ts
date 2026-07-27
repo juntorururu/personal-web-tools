@@ -1,7 +1,13 @@
 import { createDefaultData } from './defaults';
 import { jstDateKey } from './date';
-import { normalizeOrders } from './routines';
-import type { AppData, BackupFile, RoutineGroup, RoutineItem } from '../types';
+import { ALL_WEEKDAYS, normalizeOrders } from './routines';
+import type {
+  AppData,
+  BackupFile,
+  RoutineGroup,
+  RoutineItem,
+  Weekday,
+} from '../types';
 
 export const STORAGE_KEY = 'daily-routine:data:v1';
 
@@ -11,6 +17,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isTime(value: unknown): value is string {
   return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function parseDays(value: unknown): Weekday[] | null {
+  if (value === undefined) return [...ALL_WEEKDAYS];
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.some(
+      (day) =>
+        typeof day !== 'number' || !Number.isInteger(day) || day < 0 || day > 6,
+    )
+  ) {
+    return null;
+  }
+  const selected = new Set(value as Weekday[]);
+  return ALL_WEEKDAYS.filter((day) => selected.has(day));
 }
 
 function parseItem(value: unknown): RoutineItem | null {
@@ -29,6 +51,8 @@ function parseItem(value: unknown): RoutineItem | null {
   ) {
     return null;
   }
+  const days = parseDays(value.days);
+  if (!days) return null;
   return {
     id: value.id,
     label: value.label.trim(),
@@ -36,6 +60,7 @@ function parseItem(value: unknown): RoutineItem | null {
     time: isTime(value.time)
       ? value.time
       : defaultItemTime(group as RoutineGroup, value.order),
+    days,
     enabled: value.enabled,
     order: Math.max(0, Math.floor(value.order)),
   };

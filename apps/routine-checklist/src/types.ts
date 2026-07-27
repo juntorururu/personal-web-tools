@@ -1,10 +1,12 @@
 export type RoutineGroup = 'morning' | 'evening';
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface RoutineItem {
   id: string;
   label: string;
   group: RoutineGroup;
   time: string;
+  days: Weekday[];
   enabled: boolean;
   order: number;
 }

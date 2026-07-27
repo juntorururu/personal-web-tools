@@ -1,3 +1,5 @@
+import type { Weekday } from '../types';
+
 const JAPAN_TIME_ZONE = 'Asia/Tokyo';
 
 export function jstDateKey(date = new Date()): string {
@@ -21,6 +23,11 @@ export function jstTime(date = new Date()): string {
     minute: '2-digit',
     hour12: false,
   }).format(date);
+}
+
+export function jstWeekday(date = new Date()): Weekday {
+  const [year, month, day] = jstDateKey(date).split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay() as Weekday;
 }
 
 export function formatJstDate(date = new Date()): string {

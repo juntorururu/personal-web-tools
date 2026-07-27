@@ -6,7 +6,7 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
-import { formatJstDate, jstDateKey, jstTime } from './lib/date';
+import { formatJstDate, jstDateKey, jstTime, jstWeekday } from './lib/date';
 import { createDefaultData } from './lib/defaults';
 import {
   checkScheduledNotifications,
@@ -14,6 +14,7 @@ import {
   showRoutineNotification,
 } from './lib/notifications';
 import {
+  ALL_WEEKDAYS,
   addRoutine,
   moveRoutine,
   removeRoutine,
@@ -27,7 +28,7 @@ import {
   saveData,
 } from './lib/storage';
 import { usePwaUpdate } from './pwa';
-import type { AppData, RoutineGroup, RoutineItem } from './types';
+import type { AppData, RoutineGroup, RoutineItem, Weekday } from './types';
 
 type View = 'home' | 'edit' | 'notifications' | 'settings';
 
@@ -48,6 +49,100 @@ const PERMISSION_LABEL: Record<NotificationPermission | 'unsupported', string> =
     denied: '拒否されています',
     unsupported: '非対応',
   };
+
+const WEEKDAY_OPTIONS: Array<{ value: Weekday; label: string }> = [
+  { value: 1, label: '月' },
+  { value: 2, label: '火' },
+  { value: 3, label: '水' },
+  { value: 4, label: '木' },
+  { value: 5, label: '金' },
+  { value: 6, label: '土' },
+  { value: 0, label: '日' },
+];
+
+const DAY_PRESETS: Array<{
+  label: string;
+  days: Weekday[];
+}> = [
+  { label: '毎日', days: ALL_WEEKDAYS },
+  { label: '平日', days: [1, 2, 3, 4, 5] },
+  { label: '週末', days: [0, 6] },
+];
+
+function sameWeekdays(left: Weekday[], right: Weekday[]): boolean {
+  return (
+    left.length === right.length && left.every((day) => right.includes(day))
+  );
+}
+
+function weekdaySummary(days: Weekday[]): string {
+  if (sameWeekdays(days, ALL_WEEKDAYS)) return '毎日';
+  const preset = DAY_PRESETS.slice(1).find((item) =>
+    sameWeekdays(days, item.days),
+  );
+  if (preset) return preset.label;
+  return WEEKDAY_OPTIONS.filter((day) => days.includes(day.value))
+    .map((day) => day.label)
+    .join('・');
+}
+
+function DayPicker({
+  days,
+  onChange,
+  label,
+}: {
+  days: Weekday[];
+  onChange: (days: Weekday[]) => void;
+  label: string;
+}) {
+  const toggleDay = (day: Weekday) => {
+    if (days.includes(day)) {
+      if (days.length === 1) return;
+      onChange(days.filter((selected) => selected !== day));
+      return;
+    }
+    onChange([...days, day]);
+  };
+
+  return (
+    <fieldset className="day-picker">
+      <legend>{label}</legend>
+      <div className="day-preset-row" aria-label="曜日の一括選択">
+        {DAY_PRESETS.map((preset) => {
+          const selected = sameWeekdays(days, preset.days);
+          return (
+            <button
+              className={selected ? 'selected' : ''}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange([...preset.days])}
+              key={preset.label}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="weekday-picker" aria-label="表示する曜日">
+        {WEEKDAY_OPTIONS.map((day) => {
+          const selected = days.includes(day.value);
+          return (
+            <button
+              className={selected ? 'selected' : ''}
+              type="button"
+              aria-pressed={selected}
+              disabled={selected && days.length === 1}
+              onClick={() => toggleDay(day.value)}
+              key={day.value}
+            >
+              {day.label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
 
 function Header({
   view,
@@ -252,7 +347,10 @@ function HomeView({
   onToggle: (id: string) => void;
   onNavigate: (view: View) => void;
 }) {
-  const activeItems = data.items.filter((item) => item.enabled);
+  const weekday = jstWeekday(now);
+  const activeItems = data.items.filter(
+    (item) => item.enabled && item.days.includes(weekday),
+  );
   const completed = activeItems.filter((item) =>
     data.completion.completedIds.includes(item.id),
   ).length;
@@ -309,6 +407,11 @@ function RoutineEditor({
   const [label, setLabel] = useState('');
   const [group, setGroup] = useState<RoutineGroup>('morning');
   const [time, setTime] = useState('07:00');
+  const [days, setDays] = useState<Weekday[]>([...ALL_WEEKDAYS]);
+  const [newDaysExpanded, setNewDaysExpanded] = useState(false);
+  const [expandedDayIds, setExpandedDayIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const mutateItems = (change: (items: RoutineItem[]) => RoutineItem[]) =>
     setData((current) => ({ ...current, items: change(current.items) }));
@@ -316,8 +419,10 @@ function RoutineEditor({
   const add = (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      mutateItems((items) => addRoutine(items, label, group, time));
+      mutateItems((items) => addRoutine(items, label, group, time, days));
       setLabel('');
+      setDays([...ALL_WEEKDAYS]);
+      setNewDaysExpanded(false);
       notify('項目を追加しました。');
     } catch (error) {
       notify(error instanceof Error ? error.message : '追加できませんでした。');
@@ -381,6 +486,25 @@ function RoutineEditor({
               required
             />
           </label>
+          <button
+            className="day-summary-button"
+            type="button"
+            aria-expanded={newDaysExpanded}
+            onClick={() => setNewDaysExpanded((expanded) => !expanded)}
+          >
+            <span>表示する曜日</span>
+            <strong>{weekdaySummary(days)}</strong>
+            <span className="day-chevron" aria-hidden="true">
+              ⌄
+            </span>
+          </button>
+          {newDaysExpanded && (
+            <DayPicker
+              days={days}
+              onChange={setDays}
+              label="新しい項目を表示する曜日"
+            />
+          )}
           <button className="primary-button" type="submit">
             項目を追加
           </button>
@@ -486,6 +610,36 @@ function RoutineEditor({
                     <span>{item.enabled ? '有効' : '無効'}</span>
                   </label>
                 </div>
+                <button
+                  className="day-summary-button"
+                  type="button"
+                  aria-expanded={expandedDayIds.has(item.id)}
+                  onClick={() =>
+                    setExpandedDayIds((current) => {
+                      const next = new Set(current);
+                      if (next.has(item.id)) next.delete(item.id);
+                      else next.add(item.id);
+                      return next;
+                    })
+                  }
+                >
+                  <span>表示する曜日</span>
+                  <strong>{weekdaySummary(item.days)}</strong>
+                  <span className="day-chevron" aria-hidden="true">
+                    ⌄
+                  </span>
+                </button>
+                {expandedDayIds.has(item.id) && (
+                  <DayPicker
+                    days={item.days}
+                    onChange={(nextDays) =>
+                      mutateItems((items) =>
+                        updateRoutine(items, item.id, { days: nextDays }),
+                      )
+                    }
+                    label={`${item.label}を表示する曜日`}
+                  />
+                )}
                 <div className="item-actions">
                   <button
                     type="button"
@@ -862,7 +1016,7 @@ function SettingsView({
         </div>
         <div>
           <span>バージョン</span>
-          <strong>1.1.1</strong>
+          <strong>1.2.0</strong>
         </div>
         <div>
           <span>保存先</span>

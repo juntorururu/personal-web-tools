@@ -700,6 +700,110 @@ input[type='checkbox'] {
   font-weight: 750;
 }
 
+.day-summary-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+  padding: 9px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto 18px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.day-summary-button > span:first-child {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.day-summary-button strong {
+  color: var(--primary-strong);
+  font-size: 0.86rem;
+}
+
+.day-chevron {
+  color: var(--muted);
+  font-size: 1.05rem;
+  text-align: center;
+  transition: transform 180ms ease;
+}
+
+.day-summary-button[aria-expanded='true'] .day-chevron {
+  transform: rotate(180deg);
+}
+
+.day-picker {
+  min-width: 0;
+  margin: 10px 0 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.day-picker legend {
+  padding: 0 5px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.day-preset-row,
+.weekday-picker {
+  display: grid;
+  gap: 7px;
+}
+
+.day-preset-row {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 10px;
+}
+
+.weekday-picker {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.day-preset-row button,
+.weekday-picker button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 3px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.day-preset-row button {
+  border-radius: 10px;
+}
+
+.weekday-picker button {
+  border-radius: 50%;
+}
+
+.day-preset-row button.selected,
+.weekday-picker button.selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.weekday-picker button:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
 .small-button {
   flex: 1;
   min-height: 42px;
@@ -924,6 +1028,8 @@ input[type='checkbox'] {
     grid-template-columns: 1fr 160px 140px;
   }
 
+  .add-form > .day-summary-button,
+  .add-form > .day-picker,
   .add-form .primary-button {
     grid-column: 1 / -1;
   }
@@ -960,6 +1066,15 @@ input[type='checkbox'] {
 
   .editor-controls {
     flex-wrap: wrap;
+  }
+
+  .day-picker {
+    padding-inline: 9px;
+  }
+
+  .day-preset-row,
+  .weekday-picker {
+    gap: 5px;
   }
 }
 

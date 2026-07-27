@@ -1,4 +1,17 @@
-import type { RoutineGroup, RoutineItem } from '../types';
+import type { RoutineGroup, RoutineItem, Weekday } from '../types';
+
+export const ALL_WEEKDAYS: Weekday[] = [0, 1, 2, 3, 4, 5, 6];
+
+export function normalizeWeekdays(days: Weekday[]): Weekday[] {
+  if (
+    days.length === 0 ||
+    days.some((day) => !Number.isInteger(day) || day < 0 || day > 6)
+  ) {
+    throw new Error('表示する曜日を1つ以上選んでください。');
+  }
+  const selected = new Set(days);
+  return ALL_WEEKDAYS.filter((day) => selected.has(day));
+}
 
 export function normalizeOrders(items: RoutineItem[]): RoutineItem[] {
   const result: RoutineItem[] = [];
@@ -18,6 +31,7 @@ export function addRoutine(
   label: string,
   group: RoutineGroup,
   time: string,
+  days: Weekday[] = ALL_WEEKDAYS,
   id: string = crypto.randomUUID(),
 ): RoutineItem[] {
   const cleanLabel = label.trim();
@@ -36,6 +50,7 @@ export function addRoutine(
       label: cleanLabel,
       group,
       time,
+      days: normalizeWeekdays(days),
       enabled: true,
       order: nextOrder,
     },
@@ -45,7 +60,9 @@ export function addRoutine(
 export function updateRoutine(
   items: RoutineItem[],
   id: string,
-  patch: Partial<Pick<RoutineItem, 'label' | 'group' | 'time' | 'enabled'>>,
+  patch: Partial<
+    Pick<RoutineItem, 'label' | 'group' | 'time' | 'days' | 'enabled'>
+  >,
 ): RoutineItem[] {
   const current = items.find((item) => item.id === id);
   if (!current) return items;
@@ -58,6 +75,8 @@ export function updateRoutine(
   ) {
     throw new Error('時刻を正しく入力してください。');
   }
+  const days =
+    patch.days === undefined ? current.days : normalizeWeekdays(patch.days);
 
   return normalizeOrders(
     items.map((item) =>
@@ -66,6 +85,7 @@ export function updateRoutine(
             ...item,
             ...patch,
             label,
+            days,
             order:
               patch.group && patch.group !== current.group
                 ? Number.MAX_SAFE_INTEGER

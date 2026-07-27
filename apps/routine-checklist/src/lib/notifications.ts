@@ -1,4 +1,4 @@
-import { jstDateKey, jstTime } from './date';
+import { jstDateKey, jstTime, jstWeekday } from './date';
 import type { AppData, RoutineGroup } from '../types';
 
 const NOTIFICATION_LOG_KEY = 'daily-routine:notification-log:v1';
@@ -68,12 +68,22 @@ export async function checkScheduledNotifications(
 
   const date = jstDateKey(now);
   const time = jstTime(now);
+  const weekday = jstWeekday(now);
   const log = readNotificationLog();
 
   for (const group of ['morning', 'evening'] as const) {
     const setting = data.notifications[group];
     const key = logKey(date, group);
-    if (setting.enabled && setting.time === time && !log.includes(key)) {
+    const hasRoutineToday = data.items.some(
+      (item) =>
+        item.enabled && item.group === group && item.days.includes(weekday),
+    );
+    if (
+      setting.enabled &&
+      setting.time === time &&
+      hasRoutineToday &&
+      !log.includes(key)
+    ) {
       await showRoutineNotification(group);
       log.push(key);
     }

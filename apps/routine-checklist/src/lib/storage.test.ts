@@ -43,6 +43,7 @@ describe('storage and backup', () => {
     expect(restored.notifications.morning.enabled).toBe(true);
     expect(restored.items).toHaveLength(9);
     expect(restored.items[0].time).toBe('06:30');
+    expect(restored.items[0].days).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
   it('migrates old items that do not have a time', () => {
@@ -53,6 +54,16 @@ describe('storage and backup', () => {
     delete legacy.items[0].time;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
     expect(loadData(day1).items[0].time).toBe('06:30');
+  });
+
+  it('migrates old items that do not have display days', () => {
+    const data = createDefaultData(day1);
+    const legacy = JSON.parse(JSON.stringify(data)) as {
+      items: Array<Record<string, unknown>>;
+    };
+    delete legacy.items[0].days;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+    expect(loadData(day1).items[0].days).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
   it('rejects invalid JSON without replacing existing data', () => {
