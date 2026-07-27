@@ -83,6 +83,7 @@ body {
   min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -136,7 +137,7 @@ select:focus-visible {
 
 .header-inner h1 {
   margin: 2px 0 0;
-  font-size: clamp(1.3rem, 5.4vw, 1.65rem);
+  font-size: clamp(1.18rem, 4.8vw, 1.42rem);
   line-height: 1.2;
 }
 
@@ -144,7 +145,7 @@ select:focus-visible {
 .card-kicker {
   margin: 0;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
 }
@@ -211,7 +212,7 @@ select:focus-visible {
 }
 
 .week-day > span {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
@@ -222,7 +223,7 @@ select:focus-visible {
   place-items: center;
   border-radius: 50%;
   color: var(--text);
-  font-size: 1.15rem;
+  font-size: 1.06rem;
   font-weight: 800;
 }
 
@@ -254,14 +255,14 @@ select:focus-visible {
 .today {
   margin: 0;
   color: var(--muted);
-  font-size: 0.96rem;
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
 .current-time {
   margin: 0;
   color: var(--text);
-  font-size: 1.3rem;
+  font-size: 1.12rem;
   font-weight: 850;
   font-variant-numeric: tabular-nums;
 }
@@ -269,7 +270,7 @@ select:focus-visible {
 .current-time span {
   margin-right: 7px;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -319,32 +320,32 @@ select:focus-visible {
 
 .progress-number {
   color: var(--primary-strong);
-  font-size: 1.65rem;
+  font-size: 1.48rem;
   font-weight: 850;
   line-height: 1;
 }
 
 .progress-total {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
 .progress-summary h2 {
   margin: 4px 0 5px;
-  font-size: 1.25rem;
+  font-size: 1.12rem;
 }
 
 .progress-summary > p:not(.eyebrow) {
   margin: 0;
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   line-height: 1.5;
 }
 
 .progress-summary > p strong {
   color: var(--accent);
-  font-size: 1rem;
+  font-size: 0.94rem;
 }
 
 .progress-track {
@@ -385,20 +386,20 @@ select:focus-visible {
 .card-heading {
   display: flex;
   align-items: center;
-  padding: 22px 20px 12px;
-  gap: 13px;
+  padding: 20px 18px 10px;
+  gap: 12px;
 }
 
 .group-icon {
-  flex: 0 0 48px;
-  width: 48px;
-  height: 48px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--primary);
   color: #ffffff;
-  font-size: 1.5rem;
+  font-size: 1.34rem;
 }
 
 .evening .group-icon {
@@ -415,7 +416,7 @@ select:focus-visible {
   border-radius: 999px;
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 800;
 }
 
@@ -424,18 +425,18 @@ select:focus-visible {
 .panel h2,
 .danger-zone h2 {
   margin: 4px 0 0;
-  font-size: 1.28rem;
+  font-size: 1.14rem;
 }
 
 .checklist {
   list-style: none;
   margin: 0;
-  padding: 0 14px 18px;
+  padding: 0 14px 16px;
 }
 
 .check-row {
-  min-height: 88px;
-  padding: 8px 4px;
+  min-height: 82px;
+  padding: 7px 4px;
   display: grid;
   grid-template-columns: 52px 50px minmax(0, 1fr) 34px;
   align-items: center;
@@ -456,9 +457,9 @@ select:focus-visible {
 
 .timeline-row time {
   align-self: start;
-  padding-top: 17px;
+  padding-top: 15px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -468,15 +469,15 @@ select:focus-visible {
   position: relative;
   display: grid;
   place-items: start center;
-  padding-top: 7px;
+  padding-top: 6px;
 }
 
 .timeline-marker::after {
   content: '';
   position: absolute;
   z-index: 0;
-  top: 53px;
-  bottom: -11px;
+  top: 49px;
+  bottom: -10px;
   left: 50%;
   width: 3px;
   transform: translateX(-50%);
@@ -490,14 +491,14 @@ select:focus-visible {
 
 .timeline-marker > span {
   z-index: 1;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--morning);
   color: var(--primary-strong);
-  font-size: 1.05rem;
+  font-size: 0.94rem;
   font-weight: 900;
 }
 
@@ -514,13 +515,13 @@ select:focus-visible {
 
 .task-copy small {
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 600;
 }
 
 .custom-check {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border: 2px solid var(--primary);
@@ -537,9 +538,9 @@ select:focus-visible {
 
 .check-label {
   overflow: hidden;
-  font-size: clamp(1.04rem, 4.4vw, 1.18rem);
-  font-weight: 800;
-  line-height: 1.35;
+  font-size: clamp(0.96rem, 4vw, 1.08rem);
+  font-weight: 750;
+  line-height: 1.4;
   text-overflow: ellipsis;
 }
 

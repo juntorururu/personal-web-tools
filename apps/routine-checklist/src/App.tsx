@@ -862,7 +862,7 @@ function SettingsView({
         </div>
         <div>
           <span>バージョン</span>
-          <strong>1.1.0</strong>
+          <strong>1.1.1</strong>
         </div>
         <div>
           <span>保存先</span>
