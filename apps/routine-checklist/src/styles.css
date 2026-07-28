@@ -244,6 +244,39 @@ select:focus-visible {
   background: var(--accent);
 }
 
+.week-status {
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.clear-stamp {
+  width: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.75rem;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+.percentage-pill {
+  min-width: 34px;
+  padding-inline: 4px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.today-day .percentage-pill {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+}
+
 .today-line {
   padding: 0 4px;
   display: flex;

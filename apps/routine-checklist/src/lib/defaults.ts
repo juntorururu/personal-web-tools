@@ -99,5 +99,6 @@ export function createDefaultData(now = new Date()): AppData {
       date: jstDateKey(now),
       completedIds: [],
     },
+    history: [],
   };
 }

@@ -30,12 +30,18 @@ export interface CompletionState {
   completedIds: string[];
 }
 
+export interface DailyProgress {
+  date: string;
+  percentage: number;
+}
+
 export interface AppData {
   schemaVersion: 1;
   items: RoutineItem[];
   notifications: NotificationSettings;
   settings: AppSettings;
   completion: CompletionState;
+  history: DailyProgress[];
 }
 
 export interface BackupFile {

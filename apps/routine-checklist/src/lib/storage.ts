@@ -1,9 +1,10 @@
 import { createDefaultData } from './defaults';
-import { jstDateKey } from './date';
+import { jstDateKey, weekdayFromDateKey } from './date';
 import { ALL_WEEKDAYS, normalizeOrders } from './routines';
 import type {
   AppData,
   BackupFile,
+  DailyProgress,
   RoutineGroup,
   RoutineItem,
   Weekday,
@@ -74,6 +75,29 @@ function defaultItemTime(group: RoutineGroup, order: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
+function parseHistory(value: unknown): DailyProgress[] | null {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) return null;
+  const records: DailyProgress[] = [];
+  for (const item of value) {
+    if (
+      !isRecord(item) ||
+      typeof item.date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(item.date) ||
+      typeof item.percentage !== 'number' ||
+      !Number.isInteger(item.percentage) ||
+      item.percentage < 0 ||
+      item.percentage > 100
+    ) {
+      return null;
+    }
+    records.push({ date: item.date, percentage: item.percentage });
+  }
+  return [...new Map(records.map((record) => [record.date, record])).values()]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-90);
+}
+
 export function validateAppData(value: unknown): AppData | null {
   if (
     !isRecord(value) ||
@@ -91,8 +115,10 @@ export function validateAppData(value: unknown): AppData | null {
   const notifications = value.notifications;
   const settings = value.settings;
   const completion = value.completion;
+  const history = parseHistory(value.history);
   if (!isRecord(notifications) || !isRecord(settings) || !isRecord(completion))
     return null;
+  if (!history) return null;
   const morning = notifications.morning;
   const evening = notifications.evening;
   if (!isRecord(morning) || !isRecord(evening)) return null;
@@ -130,13 +156,40 @@ export function validateAppData(value: unknown): AppData | null {
         validIds.has(id),
       ),
     },
+    history,
   };
 }
 
 export function ensureToday(data: AppData, now = new Date()): AppData {
   const today = jstDateKey(now);
   if (data.completion.date === today) return data;
-  return { ...data, completion: { date: today, completedIds: [] } };
+  const weekday = weekdayFromDateKey(data.completion.date);
+  const scheduledItems = data.items.filter(
+    (item) => item.enabled && item.days.includes(weekday),
+  );
+  const completedCount = scheduledItems.filter((item) =>
+    data.completion.completedIds.includes(item.id),
+  ).length;
+  const percentage =
+    scheduledItems.length === 0
+      ? null
+      : Math.round((completedCount / scheduledItems.length) * 100);
+  const history =
+    percentage === null
+      ? data.history
+      : [
+          ...data.history.filter(
+            (record) => record.date !== data.completion.date,
+          ),
+          { date: data.completion.date, percentage },
+        ]
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .slice(-90);
+  return {
+    ...data,
+    history,
+    completion: { date: today, completedIds: [] },
+  };
 }
 
 export function loadData(now = new Date()): AppData {

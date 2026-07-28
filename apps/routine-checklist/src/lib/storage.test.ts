@@ -30,7 +30,17 @@ describe('storage and backup', () => {
   it('resets completion on the next JST day', () => {
     const data = createDefaultData(day1);
     data.completion.completedIds = ['morning-water'];
-    expect(ensureToday(data, day2).completion.completedIds).toEqual([]);
+    const nextDay = ensureToday(data, day2);
+    expect(nextDay.completion.completedIds).toEqual([]);
+    expect(nextDay.history).toEqual([{ date: '2026-07-27', percentage: 11 }]);
+  });
+
+  it('records a clear day as 100 percent', () => {
+    const data = createDefaultData(day1);
+    data.completion.completedIds = data.items.map((item) => item.id);
+    expect(ensureToday(data, day2).history).toEqual([
+      { date: '2026-07-27', percentage: 100 },
+    ]);
   });
 
   it('exports and restores valid data', () => {
@@ -44,6 +54,7 @@ describe('storage and backup', () => {
     expect(restored.items).toHaveLength(9);
     expect(restored.items[0].time).toBe('06:30');
     expect(restored.items[0].days).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(restored.history).toEqual([]);
   });
 
   it('migrates old items that do not have a time', () => {
@@ -64,6 +75,14 @@ describe('storage and backup', () => {
     delete legacy.items[0].days;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
     expect(loadData(day1).items[0].days).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it('migrates old data that does not have progress history', () => {
+    const data = createDefaultData(day1);
+    const legacy = JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
+    delete legacy.history;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+    expect(loadData(day1).history).toEqual([]);
   });
 
   it('rejects invalid JSON without replacing existing data', () => {

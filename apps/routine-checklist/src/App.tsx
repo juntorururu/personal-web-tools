@@ -198,7 +198,15 @@ function Header({
   );
 }
 
-function WeekStrip({ now }: { now: Date }) {
+function WeekStrip({
+  now,
+  history,
+  currentPercentage,
+}: {
+  now: Date;
+  history: AppData['history'];
+  currentPercentage: number | null;
+}) {
   const dateKey = jstDateKey(now);
   const [year, month, day] = dateKey.split('-').map(Number);
   const currentDate = new Date(Date.UTC(year, month - 1, day));
@@ -211,6 +219,18 @@ function WeekStrip({ now }: { now: Date }) {
         const date = new Date(currentDate);
         date.setUTCDate(currentDate.getUTCDate() + index - currentDay);
         const isToday = index === currentDay;
+        const dateKeyForDay = [
+          date.getUTCFullYear(),
+          String(date.getUTCMonth() + 1).padStart(2, '0'),
+          String(date.getUTCDate()).padStart(2, '0'),
+        ].join('-');
+        const isFuture = date.getTime() > currentDate.getTime();
+        const percentage = isToday
+          ? currentPercentage
+          : isFuture
+            ? null
+            : (history.find((record) => record.date === dateKeyForDay)
+                ?.percentage ?? null);
         return (
           <div
             className={`week-day ${isToday ? 'today-day' : ''}`}
@@ -220,7 +240,23 @@ function WeekStrip({ now }: { now: Date }) {
             <strong aria-current={isToday ? 'date' : undefined}>
               {date.getUTCDate()}
             </strong>
-            <i aria-hidden="true" />
+            {percentage === 100 ? (
+              <small
+                className="week-status clear-stamp"
+                aria-label={`${date.getUTCDate()}日はすべてクリア`}
+              >
+                ✓
+              </small>
+            ) : percentage !== null ? (
+              <small
+                className="week-status percentage-pill"
+                aria-label={`${date.getUTCDate()}日の達成率は${percentage}%`}
+              >
+                {percentage}%
+              </small>
+            ) : (
+              <i aria-hidden="true" />
+            )}
           </div>
         );
       })}
@@ -354,6 +390,10 @@ function HomeView({
   const completed = activeItems.filter((item) =>
     data.completion.completedIds.includes(item.id),
   ).length;
+  const currentPercentage =
+    activeItems.length === 0
+      ? null
+      : Math.round((completed / activeItems.length) * 100);
   const itemsFor = (group: RoutineGroup) =>
     activeItems
       .filter((item) => item.group === group)
@@ -361,7 +401,11 @@ function HomeView({
 
   return (
     <main className="page home-page">
-      <WeekStrip now={now} />
+      <WeekStrip
+        now={now}
+        history={data.history}
+        currentPercentage={currentPercentage}
+      />
       <div className="today-line">
         <p className="today">{formatJstDate(now)}</p>
         <p className="current-time">

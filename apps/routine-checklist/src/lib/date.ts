@@ -26,7 +26,11 @@ export function jstTime(date = new Date()): string {
 }
 
 export function jstWeekday(date = new Date()): Weekday {
-  const [year, month, day] = jstDateKey(date).split('-').map(Number);
+  return weekdayFromDateKey(jstDateKey(date));
+}
+
+export function weekdayFromDateKey(dateKey: string): Weekday {
+  const [year, month, day] = dateKey.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay() as Weekday;
 }
 
