@@ -210,15 +210,17 @@ function WeekStrip({
   const dateKey = jstDateKey(now);
   const [year, month, day] = dateKey.split('-').map(Number);
   const currentDate = new Date(Date.UTC(year, month - 1, day));
-  const currentDay = currentDate.getUTCDay();
-  const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+  const currentWeekIndex = (currentDate.getUTCDay() + 6) % 7;
+  const weekDays = ['月', '火', '水', '木', '金', '土', '日'];
 
   return (
     <section className="week-strip" aria-label="今週">
       {weekDays.map((weekday, index) => {
         const date = new Date(currentDate);
-        date.setUTCDate(currentDate.getUTCDate() + index - currentDay);
-        const isToday = index === currentDay;
+        date.setUTCDate(currentDate.getUTCDate() + index - currentWeekIndex);
+        const isToday = index === currentWeekIndex;
+        const isSaturday = index === 5;
+        const isSunday = index === 6;
         const dateKeyForDay = [
           date.getUTCFullYear(),
           String(date.getUTCMonth() + 1).padStart(2, '0'),
@@ -233,7 +235,14 @@ function WeekStrip({
                 ?.percentage ?? null);
         return (
           <div
-            className={`week-day ${isToday ? 'today-day' : ''}`}
+            className={[
+              'week-day',
+              isToday ? 'today-day' : '',
+              isSaturday ? 'saturday-day' : '',
+              isSunday ? 'sunday-day' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             key={weekday}
           >
             <span>{weekday}</span>

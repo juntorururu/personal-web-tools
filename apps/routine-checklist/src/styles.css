@@ -206,7 +206,9 @@ select:focus-visible {
 .week-day {
   min-width: 0;
   display: grid;
+  grid-template-rows: 18px 38px 24px;
   justify-items: center;
+  align-items: center;
   gap: 6px;
   color: var(--muted);
 }
@@ -214,6 +216,7 @@ select:focus-visible {
 .week-day > span {
   font-size: 0.72rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .week-day > strong {
@@ -225,6 +228,17 @@ select:focus-visible {
   color: var(--text);
   font-size: 1.06rem;
   font-weight: 800;
+  line-height: 1;
+}
+
+.week-day.saturday-day > span,
+.week-day.saturday-day > strong {
+  color: #3f7fd9;
+}
+
+.week-day.sunday-day > span,
+.week-day.sunday-day > strong {
+  color: var(--accent);
 }
 
 .week-day.today-day > strong {
@@ -236,6 +250,7 @@ select:focus-visible {
 .week-day > i {
   width: 5px;
   height: 5px;
+  align-self: center;
   border-radius: 50%;
   background: var(--line);
 }
