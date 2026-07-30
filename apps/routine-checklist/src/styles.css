@@ -206,7 +206,7 @@ select:focus-visible {
 .week-day {
   min-width: 0;
   display: grid;
-  grid-template-rows: 18px 38px 24px;
+  grid-template-rows: 18px 38px 38px;
   justify-items: center;
   align-items: center;
   gap: 6px;
@@ -260,36 +260,77 @@ select:focus-visible {
 }
 
 .week-status {
-  height: 24px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
+  position: relative;
+  isolation: isolate;
   font-style: normal;
   font-variant-numeric: tabular-nums;
   font-weight: 850;
   line-height: 1;
 }
 
-.clear-stamp {
-  width: 24px;
+.achievement-stamp {
   border-radius: 50%;
+}
+
+.achievement-stamp b {
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.achievement-stamp span {
+  font-size: 0.52rem;
+  line-height: 0.7;
+}
+
+.clear-stamp {
+  grid-template-rows: 10px 10px;
+  gap: 1px;
   background: var(--primary);
   color: #ffffff;
-  font-size: 0.75rem;
   box-shadow: 0 4px 10px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
-.percentage-pill {
-  min-width: 34px;
-  padding-inline: 4px;
-  border-radius: 999px;
-  background: var(--surface-soft);
-  color: var(--muted);
-  font-size: 0.62rem;
+.clear-stamp::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 44%;
+  background: var(--primary);
+  transform: rotate(22.5deg);
 }
 
-.today-day .percentage-pill {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  color: var(--accent);
+.gold-stamp {
+  grid-template-rows: 10px 10px;
+  gap: 1px;
+  border: 2px solid #d6a12f;
+  background: #fffaf0;
+  color: #b67c00;
+}
+
+.gold-stamp::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border: 1.5px solid #d6a12f;
+  border-radius: 44%;
+  transform: rotate(22.5deg);
+}
+
+.gray-stamp {
+  border: 2px solid #b9bec2;
+  background: var(--surface-soft);
+  color: #737a7e;
+}
+
+.gray-stamp b {
+  font-size: 0.6rem;
 }
 
 .today-line {

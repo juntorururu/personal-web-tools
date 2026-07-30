@@ -251,17 +251,26 @@ function WeekStrip({
             </strong>
             {percentage === 100 ? (
               <small
-                className="week-status clear-stamp"
+                className="week-status achievement-stamp clear-stamp"
                 aria-label={`${date.getUTCDate()}日はすべてクリア`}
               >
-                ✓
+                <span aria-hidden="true">♛</span>
+                <b>100%</b>
+              </small>
+            ) : percentage !== null && percentage >= 80 ? (
+              <small
+                className="week-status achievement-stamp gold-stamp"
+                aria-label={`${date.getUTCDate()}日の達成率は${percentage}%`}
+              >
+                <span aria-hidden="true">★</span>
+                <b>{percentage}%</b>
               </small>
             ) : percentage !== null ? (
               <small
-                className="week-status percentage-pill"
+                className="week-status achievement-stamp gray-stamp"
                 aria-label={`${date.getUTCDate()}日の達成率は${percentage}%`}
               >
-                {percentage}%
+                <b>{percentage}%</b>
               </small>
             ) : (
               <i aria-hidden="true" />
