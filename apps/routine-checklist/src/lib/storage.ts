@@ -11,6 +11,9 @@ import type {
 } from '../types';
 
 export const STORAGE_KEY = 'daily-routine:data:v1';
+export const WEEKDAY_SNAPSHOT_KEY = 'daily-routine:weekdays:v1';
+
+type WeekdaySnapshot = Map<string, Weekday[]>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -36,7 +39,10 @@ function parseDays(value: unknown): Weekday[] | null {
   return ALL_WEEKDAYS.filter((day) => selected.has(day));
 }
 
-function parseItem(value: unknown): RoutineItem | null {
+function parseItem(
+  value: unknown,
+  weekdaySnapshot: WeekdaySnapshot,
+): RoutineItem | null {
   if (!isRecord(value)) return null;
   const group: unknown = value.group;
   const validGroup = group === 'morning' || group === 'evening';
@@ -52,7 +58,8 @@ function parseItem(value: unknown): RoutineItem | null {
   ) {
     return null;
   }
-  const days = parseDays(value.days);
+  const savedDays = weekdaySnapshot.get(value.id);
+  const days = parseDays(value.days === undefined ? savedDays : value.days);
   if (!days) return null;
   return {
     id: value.id,
@@ -65,6 +72,32 @@ function parseItem(value: unknown): RoutineItem | null {
     enabled: value.enabled,
     order: Math.max(0, Math.floor(value.order)),
   };
+}
+
+function loadWeekdaySnapshot(): WeekdaySnapshot {
+  const snapshot: WeekdaySnapshot = new Map();
+  try {
+    const raw = localStorage.getItem(WEEKDAY_SNAPSHOT_KEY);
+    if (!raw) return snapshot;
+    const value: unknown = JSON.parse(raw);
+    if (!isRecord(value)) return snapshot;
+    Object.entries(value).forEach(([id, savedDays]) => {
+      const days = parseDays(savedDays);
+      if (days) snapshot.set(id, days);
+    });
+  } catch {
+    return snapshot;
+  }
+  return snapshot;
+}
+
+function saveWeekdaySnapshot(items: RoutineItem[]): void {
+  localStorage.setItem(
+    WEEKDAY_SNAPSHOT_KEY,
+    JSON.stringify(
+      Object.fromEntries(items.map((item) => [item.id, [...item.days]])),
+    ),
+  );
 }
 
 function defaultItemTime(group: RoutineGroup, order: number): string {
@@ -98,7 +131,10 @@ function parseHistory(value: unknown): DailyProgress[] | null {
     .slice(-90);
 }
 
-export function validateAppData(value: unknown): AppData | null {
+export function validateAppData(
+  value: unknown,
+  weekdaySnapshot: WeekdaySnapshot = new Map(),
+): AppData | null {
   if (
     !isRecord(value) ||
     value.schemaVersion !== 1 ||
@@ -106,7 +142,7 @@ export function validateAppData(value: unknown): AppData | null {
   )
     return null;
 
-  const items = value.items.map(parseItem);
+  const items = value.items.map((item) => parseItem(item, weekdaySnapshot));
   if (items.some((item) => item === null)) return null;
   const validItems = items as RoutineItem[];
   if (new Set(validItems.map((item) => item.id)).size !== validItems.length)
@@ -196,7 +232,7 @@ export function loadData(now = new Date()): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return createDefaultData(now);
-    const valid = validateAppData(JSON.parse(raw));
+    const valid = validateAppData(JSON.parse(raw), loadWeekdaySnapshot());
     return valid ? ensureToday(valid, now) : createDefaultData(now);
   } catch {
     return createDefaultData(now);
@@ -204,6 +240,7 @@ export function loadData(now = new Date()): AppData {
 }
 
 export function saveData(data: AppData): void {
+  saveWeekdaySnapshot(data.items);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 

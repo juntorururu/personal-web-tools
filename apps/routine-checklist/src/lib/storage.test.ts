@@ -6,6 +6,7 @@ import {
   parseBackup,
   saveData,
   STORAGE_KEY,
+  WEEKDAY_SNAPSHOT_KEY,
 } from './storage';
 
 const day1 = new Date('2026-07-27T03:00:00+09:00');
@@ -75,6 +76,35 @@ describe('storage and backup', () => {
     delete legacy.items[0].days;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
     expect(loadData(day1).items[0].days).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it('restores weekdays after an older app removes them', () => {
+    const data = createDefaultData(day1);
+    data.items[0].days = [1, 4];
+    saveData(data);
+
+    const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '') as {
+      items: Array<Record<string, unknown>>;
+    };
+    legacy.items.forEach((item) => delete item.days);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+
+    expect(loadData(day1).items[0].days).toEqual([1, 4]);
+  });
+
+  it('prefers current item weekdays over an older recovery snapshot', () => {
+    const data = createDefaultData(day1);
+    data.items[0].days = [1, 4];
+    saveData(data);
+
+    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '') as {
+      items: Array<Record<string, unknown>>;
+    };
+    current.items[0].days = [2, 5];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+
+    expect(loadData(day1).items[0].days).toEqual([2, 5]);
+    expect(localStorage.getItem(WEEKDAY_SNAPSHOT_KEY)).not.toBeNull();
   });
 
   it('migrates old data that does not have progress history', () => {

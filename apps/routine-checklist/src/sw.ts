@@ -16,6 +16,10 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 clientsClaim();
 
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
 
 self.addEventListener('message', (event) => {
