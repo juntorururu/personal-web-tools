@@ -24,13 +24,35 @@ import {
   createBackup,
   ensureToday,
   loadData,
-  parseBackup,
+  parseCompleteBackup,
   saveData,
 } from './lib/storage';
+import { createDefaultParentingData } from './lib/parentingDefaults';
+import { loadParentingData, saveParentingData } from './lib/parentingStorage';
 import { usePwaUpdate } from './pwa';
 import type { AppData, RoutineGroup, RoutineItem, Weekday } from './types';
+import type { ChildProfileSection, ParentingData } from './parentingTypes';
+import {
+  BottomNav,
+  ChildProfileView,
+  DailyParentingView,
+  GrowthRecordsView,
+  ParentingDashboard,
+  ParentingSettingsPanel,
+  WeeklyParentingView,
+  type MainTab,
+} from './ParentingViews';
 
-type View = 'home' | 'edit' | 'notifications' | 'settings';
+type View =
+  | 'home'
+  | 'parenting'
+  | 'parenting-daily'
+  | 'parenting-weekly'
+  | 'child'
+  | 'records'
+  | 'edit'
+  | 'notifications'
+  | 'settings';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -147,28 +169,35 @@ function DayPicker({
 function Header({
   view,
   onNavigate,
+  onBack,
 }: {
   view: View;
   onNavigate: (view: View) => void;
+  onBack: () => void;
 }) {
-  const title =
-    view === 'home'
-      ? '毎日のルーティン'
-      : view === 'edit'
-        ? 'ルーティン編集'
-        : view === 'notifications'
-          ? '通知設定'
-          : 'アプリ設定';
+  const titles: Record<View, string> = {
+    home: '毎日のルーティン',
+    parenting: '育児',
+    'parenting-daily': '今日の育児',
+    'parenting-weekly': '今週の育児',
+    child: '子ども情報',
+    records: '成長・変化記録',
+    edit: 'ルーティン編集',
+    notifications: '通知設定',
+    settings: 'アプリ設定',
+  };
+  const mainViews: View[] = ['home', 'parenting', 'child', 'records'];
+  const isMainView = mainViews.includes(view);
 
   return (
     <header className="app-header">
       <div className="header-inner">
-        {view !== 'home' ? (
+        {!isMainView ? (
           <button
             className="icon-button"
             type="button"
-            onClick={() => onNavigate('home')}
-            aria-label="ホームへ戻る"
+            onClick={onBack}
+            aria-label="前の画面へ戻る"
           >
             ←
           </button>
@@ -179,9 +208,9 @@ function Header({
         )}
         <div>
           <p className="eyebrow">Daily Routine</p>
-          <h1>{title}</h1>
+          <h1>{titles[view]}</h1>
         </div>
-        {view === 'home' ? (
+        {isMainView ? (
           <button
             className="icon-button"
             type="button"
@@ -869,11 +898,15 @@ function NotificationView({
 function SettingsView({
   data,
   setData,
+  parenting,
+  setParenting,
   onNavigate,
   notify,
 }: {
   data: AppData;
   setData: (updater: (current: AppData) => AppData) => void;
+  parenting: ParentingData;
+  setParenting: (updater: (current: ParentingData) => ParentingData) => void;
   onNavigate: (view: View) => void;
   notify: (message: string) => void;
 }) {
@@ -903,9 +936,12 @@ function SettingsView({
   }, [notify]);
 
   const exportData = () => {
-    const blob = new Blob([JSON.stringify(createBackup(data), null, 2)], {
-      type: 'application/json',
-    });
+    const blob = new Blob(
+      [JSON.stringify(createBackup(data, new Date(), parenting), null, 2)],
+      {
+        type: 'application/json',
+      },
+    );
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -924,15 +960,20 @@ function SettingsView({
       return;
     }
     try {
-      const restored = parseBackup(await file.text());
+      const restored = parseCompleteBackup(await file.text());
       if (
         !window.confirm(
           '現在の設定を、選択したバックアップの内容で置き換えますか？',
         )
       )
         return;
-      setData(() => restored);
-      notify('バックアップを復元しました。');
+      setData(() => restored.data);
+      if (restored.parenting) setParenting(() => restored.parenting!);
+      notify(
+        restored.parenting
+          ? 'ルーティンと育児データを復元しました。'
+          : '旧形式のルーティンデータを復元しました。育児データは維持されています。',
+      );
     } catch (error) {
       notify(
         error instanceof Error
@@ -950,6 +991,7 @@ function SettingsView({
     )
       return;
     setData(() => createDefaultData());
+    setParenting(() => createDefaultParentingData());
     notify('すべてのデータを初期化しました。');
   };
 
@@ -1019,6 +1061,11 @@ function SettingsView({
         </label>
       </section>
 
+      <ParentingSettingsPanel
+        parenting={parenting}
+        setParenting={setParenting}
+      />
+
       <section className="panel">
         <div className="section-heading">
           <p className="eyebrow">BACKUP</p>
@@ -1078,7 +1125,7 @@ function SettingsView({
         </div>
         <div>
           <span>バージョン</span>
-          <strong>1.2.0</strong>
+          <strong>1.3.0</strong>
         </div>
         <div>
           <span>保存先</span>
@@ -1103,12 +1150,18 @@ function SettingsView({
 
 export function App() {
   const [data, setDataState] = useState<AppData>(() => loadData());
+  const [parenting, setParentingState] = useState<ParentingData>(() =>
+    loadParentingData(),
+  );
   const [now, setNow] = useState(() => new Date());
   const [view, setView] = useState<View>(() =>
     window.location.hash === '#morning' || window.location.hash === '#evening'
       ? 'home'
       : 'home',
   );
+  const [childSection, setChildSection] = useState<
+    ChildProfileSection | undefined
+  >();
   const [toast, setToast] = useState('');
   const pwa = usePwaUpdate();
 
@@ -1121,9 +1174,20 @@ export function App() {
     setDataState((current) => updater(ensureToday(current)));
   }, []);
 
+  const setParenting = useCallback(
+    (updater: (current: ParentingData) => ParentingData) => {
+      setParentingState((current) => updater(current));
+    },
+    [],
+  );
+
   useEffect(() => {
     saveData(data);
   }, [data]);
+
+  useEffect(() => {
+    saveParentingData(parenting);
+  }, [parenting]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = data.settings.theme;
@@ -1176,20 +1240,125 @@ export function App() {
     if (view === 'notifications') {
       return <NotificationView data={data} setData={setData} notify={notify} />;
     }
+    const today = jstDateKey(now);
+    const completedRoutineItems = data.items.filter(
+      (item) =>
+        data.completion.completedIds.includes(item.id) &&
+        /子|育児|お風呂|寝かしつけ|園/.test(item.label),
+    );
+    if (view === 'parenting') {
+      return (
+        <ParentingDashboard
+          parenting={parenting}
+          routine={data}
+          today={today}
+          onNavigate={(destination) => {
+            if (destination === 'today') setView('parenting-daily');
+            else if (destination === 'week') setView('parenting-weekly');
+            else if (destination === 'child') setView('child');
+            else if (destination === 'records') setView('records');
+            else setView('settings');
+          }}
+        />
+      );
+    }
+    if (view === 'parenting-daily') {
+      return (
+        <DailyParentingView
+          parenting={parenting}
+          setParenting={setParenting}
+          today={today}
+          routineItems={completedRoutineItems}
+        />
+      );
+    }
+    if (view === 'parenting-weekly') {
+      return (
+        <WeeklyParentingView
+          parenting={parenting}
+          setParenting={setParenting}
+          today={today}
+          onNavigate={(target) => {
+            if (target === 'today') setView('parenting-daily');
+            else if (target === 'records') setView('records');
+            else {
+              setChildSection(target);
+              setView('child');
+            }
+          }}
+        />
+      );
+    }
+    if (view === 'child') {
+      return (
+        <ChildProfileView
+          parenting={parenting}
+          setParenting={setParenting}
+          today={today}
+          initialSection={childSection}
+        />
+      );
+    }
+    if (view === 'records') {
+      return (
+        <GrowthRecordsView
+          parenting={parenting}
+          setParenting={setParenting}
+          today={today}
+        />
+      );
+    }
     return (
       <SettingsView
         data={data}
         setData={setData}
+        parenting={parenting}
+        setParenting={setParenting}
         onNavigate={setView}
         notify={notify}
       />
     );
-  }, [data, now, view, notify, setData, toggle]);
+  }, [
+    childSection,
+    data,
+    now,
+    view,
+    notify,
+    parenting,
+    setData,
+    setParenting,
+    toggle,
+  ]);
+
+  const activeTab: MainTab =
+    view === 'parenting' ||
+    view === 'parenting-daily' ||
+    view === 'parenting-weekly'
+      ? 'parenting'
+      : view === 'child'
+        ? 'child'
+        : view === 'records'
+          ? 'records'
+          : 'home';
+
+  const navigateMain = (tab: MainTab) => {
+    if (tab === 'child') setChildSection(undefined);
+    setView(tab);
+  };
+
+  const goBack = () => {
+    if (view === 'parenting-daily' || view === 'parenting-weekly') {
+      setView('parenting');
+      return;
+    }
+    setView('home');
+  };
 
   return (
     <div className="app-shell">
-      <Header view={view} onNavigate={setView} />
+      <Header view={view} onNavigate={setView} onBack={goBack} />
       {renderedView}
+      <BottomNav active={activeTab} onNavigate={navigateMain} />
       {(pwa.needRefresh || pwa.offlineReady) && (
         <div className="update-banner" role="status">
           <div>
