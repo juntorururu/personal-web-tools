@@ -49,4 +49,6 @@ export interface BackupFile {
   exportVersion: 1;
   exportedAt: string;
   data: AppData;
+  /** Optional so backups created before the parenting feature remain valid. */
+  parenting?: import('./parentingTypes').ParentingData;
 }
