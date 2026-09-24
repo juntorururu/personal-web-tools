@@ -9,6 +9,8 @@ import type {
   RoutineItem,
   Weekday,
 } from '../types';
+import type { ParentingData } from '../parentingTypes';
+import { validateParentingData } from './parentingStorage';
 
 export const STORAGE_KEY = 'daily-routine:data:v1';
 export const WEEKDAY_SNAPSHOT_KEY = 'daily-routine:weekdays:v1';
@@ -244,16 +246,29 @@ export function saveData(data: AppData): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function createBackup(data: AppData, now = new Date()): BackupFile {
+export function createBackup(
+  data: AppData,
+  now = new Date(),
+  parenting?: ParentingData,
+): BackupFile {
   return {
     app: 'daily-routine',
     exportVersion: 1,
     exportedAt: now.toISOString(),
     data,
+    ...(parenting ? { parenting } : {}),
   };
 }
 
-export function parseBackup(text: string, now = new Date()): AppData {
+export interface RestoredBackup {
+  data: AppData;
+  parenting?: ParentingData;
+}
+
+export function parseCompleteBackup(
+  text: string,
+  now = new Date(),
+): RestoredBackup {
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -268,11 +283,22 @@ export function parseBackup(text: string, now = new Date()): AppData {
   ) {
     throw new Error('Daily Routineのバックアップファイルではありません。');
   }
-
   const data = validateAppData(value.data);
-  if (!data)
+  if (!data) {
     throw new Error(
       'バックアップの内容が不正です。既存データは変更されていません。',
     );
-  return ensureToday(data, now);
+  }
+  if (value.parenting === undefined) return { data: ensureToday(data, now) };
+  const parenting = validateParentingData(value.parenting);
+  if (!parenting) {
+    throw new Error(
+      '育児データの内容が不正です。既存データは変更されていません。',
+    );
+  }
+  return { data: ensureToday(data, now), parenting };
+}
+
+export function parseBackup(text: string, now = new Date()): AppData {
+  return parseCompleteBackup(text, now).data;
 }
